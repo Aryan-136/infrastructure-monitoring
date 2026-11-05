@@ -1,0 +1,42 @@
+groups:
+  - name: InfrastructureAlerts
+    rules:
+      # Node Offline Alert
+      - alert: HostInstanceDown
+        expr: up{job="node-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Host instance {{ $labels.instance }} is unreachable"
+          description: "Node exporter on {{ $labels.instance }} has been down for more than 1 minute."
+
+      # High CPU Utilization
+      - alert: HostHighCpuLoad
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU load detected on {{ $labels.instance }}"
+          description: "CPU load exceeds 85% for more than 5 minutes (current: {{ $value }}%)."
+
+      # Disk Exhaustion Warning
+      - alert: HostDiskLowSpace
+        expr: ((node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes) < 15
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low storage capacity on {{ $labels.instance }}"
+          description: "Mounted filesystem on {{ $labels.mountpoint }} has less than 15% free space remaining."
+
+      # High Memory Pressure
+      - alert: HostHighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host memory exhaustion on {{ $labels.instance }}"
+          description: "Memory consumption has exceeded 90% for over 3 minutes."
